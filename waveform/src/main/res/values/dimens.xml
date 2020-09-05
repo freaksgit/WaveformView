@@ -2,5 +2,5 @@
 <resources>
     <dimen name="waveform_default_bar_width">3dp</dimen>
     <dimen name="waveform_default_bar_spacing">3dp</dimen>
-    <dimen name="waveform_default_bar_height">100dp</dimen>
+    <dimen name="waveform_default_height">100dp</dimen>
 </resources>

@@ -2,19 +2,22 @@ package com.vasylstoliarchuk.waveform
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.*
+import android.content.res.TypedArray
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import androidx.core.content.ContextCompat
 import kotlin.math.abs
 import kotlin.math.min
 
 
 class WaveformView : View {
-    private val TAG = WaveformView::class.java.simpleName
-
-    private var scaleFactor = 0.95f
+    private var scaleFactor = 0.90f
     var data: Array<Float> = emptyArray()
         set(value) {
             field = value
@@ -22,8 +25,8 @@ class WaveformView : View {
         }
 
     private var drawingPath: Path = Path()
-    private val barWidth: Int = 3
-    private val barSpacing: Int = 3
+    private var barWidth: Int = 3
+    private var barSpacing: Int = 3
     private var offsetX = 0f
         set(value) {
             val validatedValue = when {
@@ -38,13 +41,11 @@ class WaveformView : View {
 
     private val paintLeft: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = Color.parseColor("#fff7d828")
         strokeCap = Paint.Cap.ROUND
     }
 
     private val paintRight: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = Color.parseColor("#60f7d828")
         strokeCap = Paint.Cap.ROUND
     }
 
@@ -53,7 +54,7 @@ class WaveformView : View {
     private val desiredWidth: Int
         get() = data.size * (barWidth + barSpacing) - barSpacing
 
-    private val desiredHeight = resources.getDimensionPixelSize(R.dimen.waveform_default_bar_height)
+    private val desiredHeight = resources.getDimensionPixelSize(R.dimen.waveform_default_height)
 
     var waveformChangeListener: WaveformChangeListener? = null
 
@@ -75,9 +76,33 @@ class WaveformView : View {
             return abs(offsetX / desiredWidth)
         }
 
-    constructor(context: Context) : super(context)
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-    constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
+    constructor(context: Context) : super(context) {
+        init(context, null, 0)
+    }
+
+    constructor(context: Context, attrs: AttributeSet) : super(context, attrs) {
+        init(context, attrs, 0)
+    }
+
+    constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+        init(context, attrs, defStyleAttr)
+    }
+
+    private fun init(context: Context, attrs: AttributeSet?, defStyleAttr: Int) {
+        attrs ?: return
+
+        val a: TypedArray = context.obtainStyledAttributes(attrs, R.styleable.WaveformView, defStyleAttr, 0)
+
+        try {
+            paintLeft.color = a.getColor(R.styleable.WaveformView_barColorAccent, ContextCompat.getColor(context, R.color.waveform_default_bar_color_accent))
+            paintRight.color = a.getColor(R.styleable.WaveformView_barColorNormal, ContextCompat.getColor(context, R.color.waveform_default_bar_color_normal))
+            scaleFactor = a.getFraction(R.styleable.WaveformView_scaleFactor, 1, 1, 0.90f)
+            barWidth = a.getDimensionPixelSize(R.styleable.WaveformView_barWidth, resources.getDimensionPixelSize(R.dimen.waveform_default_bar_width))
+            barSpacing = a.getDimensionPixelSize(R.styleable.WaveformView_barSpacing, resources.getDimensionPixelSize(R.dimen.waveform_default_bar_spacing))
+        } finally {
+            a.recycle()
+        }
+    }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)

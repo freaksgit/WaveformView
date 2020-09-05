@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="WaveformView">
+        <attr name="scaleFactor" format="fraction" />
+        <attr name="barWidth" format="dimension" />
+        <attr name="barSpacing" format="dimension" />
+        <attr name="barColorNormal" format="color" />
+        <attr name="barColorAccent" format="color" />
+    </declare-styleable>
+</resources>

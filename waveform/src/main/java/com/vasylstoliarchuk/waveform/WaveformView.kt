@@ -3,22 +3,16 @@ package com.vasylstoliarchuk.waveform
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
-import android.view.GestureDetector
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import kotlin.math.min
 
 
 class WaveformView : View {
-    private var scaleFactor = 0.9f
-    private val myListener = object : GestureDetector.SimpleOnGestureListener() {
-        override fun onDown(e: MotionEvent): Boolean {
-            scale(1 / scaleFactor)
-            invalidate()
-            return true
-        }
-    }
-    private val detector: GestureDetector = GestureDetector(context, myListener)
+    private val TAG = WaveformView::class.java.simpleName
 
+    private var scaleFactor = 0.9f
     var data: FloatArray = FloatArray(0)
         set(value) {
             field = value
@@ -28,6 +22,13 @@ class WaveformView : View {
     private var drawingPath: Path = Path()
     private val barWidth: Int = 10
     private val barSpacing: Int = 10
+    private var offsetX = 0f
+        set(value) {
+            Log.d(TAG, "setOffsetX($value)")
+            drawingPath.offset(value - field, 0f)
+            field = value
+            invalidate()
+        }
 
     private val paint: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
@@ -37,6 +38,9 @@ class WaveformView : View {
     private val scaleMatrix = Matrix()
     private val scaleRectF = RectF()
 
+    private val desiredWidth: Int
+        get() = data.size * (barWidth + barSpacing) - barSpacing
+
     constructor(context: Context) : super(context)
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
     constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
@@ -45,6 +49,30 @@ class WaveformView : View {
         super.onSizeChanged(w, h, oldw, oldh)
         measureDrawingPath()
     }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val desiredHeight = 100
+
+        val widthMode = MeasureSpec.getMode(widthMeasureSpec)
+        val heightMode = MeasureSpec.getMode(heightMeasureSpec)
+        val widthSize = MeasureSpec.getSize(widthMeasureSpec)
+        val heightSize = MeasureSpec.getSize(heightMeasureSpec)
+
+        val width = when (widthMode) {
+            MeasureSpec.EXACTLY -> widthSize;
+            MeasureSpec.AT_MOST -> min(desiredWidth, widthSize);
+            else -> desiredWidth;
+        }
+
+        val height = when (heightMode) {
+            MeasureSpec.EXACTLY -> heightSize;
+            MeasureSpec.AT_MOST -> min(desiredHeight, heightSize);
+            else -> desiredHeight;
+        }
+
+        setMeasuredDimension(width, height);
+    }
+
 
     private fun measureDrawingPath() {
         drawingPath.reset()
@@ -59,6 +87,7 @@ class WaveformView : View {
             drawingPath.addRect(barLeft, barTop, barRight, barBottom, Path.Direction.CW)
         }
         scale(scaleFactor)
+        drawingPath.offset(width / 2f + offsetX, 0f)
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -67,19 +96,43 @@ class WaveformView : View {
 
     private fun scale(scaleFactor: Float) {
         drawingPath.computeBounds(scaleRectF, true)
-        scaleMatrix.setScale(scaleFactor, scaleFactor, scaleRectF.centerX(), scaleRectF.centerY())
+        scaleMatrix.setScale(1.0f, scaleFactor, scaleRectF.centerX(), scaleRectF.centerY())
         drawingPath.transform(scaleMatrix)
     }
 
+    private var dx = 0f
+    private var x1 = 0f
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        return detector.onTouchEvent(event).let { result ->
-            if (!result) {
-                if (event.action == MotionEvent.ACTION_UP) {
-                    scale(scaleFactor)
-                    invalidate()
-                    true
-                } else false
-            } else true
+        return when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                x1 = event.x
+                scale(1 / scaleFactor)
+                invalidate()
+                true
+            }
+
+            MotionEvent.ACTION_UP -> {
+                scale(scaleFactor)
+                invalidate()
+                true
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                dx = event.x - x1
+                Log.d(TAG, "event.x=${event.x}, x1=$x1, dx=$dx")
+                x1 = event.x
+
+                val offsetByX = offsetX + dx
+                offsetX = when {
+                    offsetByX > 0 -> 0f
+                    offsetByX < -desiredWidth -> -desiredWidth.toFloat()
+                    else -> offsetByX
+
+                }
+                return true
+            }
+            else -> false
         }
     }
 }

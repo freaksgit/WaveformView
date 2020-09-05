@@ -9,7 +9,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        waveform.data = floatArrayOf(0.7f, 0.1f, 0.2f, 1f, 0.9f, 0.1f, 0.7f, 0.1f, 0.2f, 1f, 0.9f, 0.1f, 0.7f, 0.1f, 0.2f, 1f, 0.9f, 0.1f, 0.7f, 0.1f, 0.2f, 1f, 0.9f, 0.1f)
+        waveform.data = floatArrayOf(0.7f, 0.1f, 0.2f, 1f, 0.9f, 0.1f, 0.7f, 0.1f, 0.2f, 1f, 0.9f, 0.1f, 0.7f, 0.1f, 0.2f, 1f, 0.9f, 0.1f, 0.7f, 0.1f, 0.2f, 1f, 0.9f, 0.1f,0.7f, 0.1f, 0.2f, 1f, 0.9f, 0.1f, 0.7f, 0.1f, 0.2f, 1f, 0.9f, 0.1f, 0.7f, 0.1f, 0.2f, 1f, 0.9f, 0.1f, 0.7f, 0.1f, 0.2f, 1f, 0.9f, 0.1f)
 
     }
 }

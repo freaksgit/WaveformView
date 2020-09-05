@@ -1,2 +1,3 @@
+include ':waveform'
 include ':app'
 rootProject.name = "Waveform"

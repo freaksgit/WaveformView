@@ -7,6 +7,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import kotlin.math.abs
 import kotlin.math.min
 
 
@@ -53,6 +54,26 @@ class WaveformView : View {
         get() = data.size * (barWidth + barSpacing) - barSpacing
 
     private val desiredHeight = resources.getDimensionPixelSize(R.dimen.waveform_default_bar_height)
+
+    var waveformChangeListener: WaveformChangeListener? = null
+
+    private var fromUser = false
+
+    var progress: Float = 0f
+        set(value) {
+            val validatedValue = when {
+                value > 1f -> 1f
+                value < 0 -> 0f
+                else -> value
+            }
+
+            field = validatedValue
+            offsetX = -desiredWidth * validatedValue
+            waveformChangeListener?.onProgressChanged(this, value, fromUser)
+        }
+        get() {
+            return abs(offsetX / desiredWidth)
+        }
 
     constructor(context: Context) : super(context)
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
@@ -137,6 +158,8 @@ class WaveformView : View {
     override fun onTouchEvent(event: MotionEvent): Boolean {
         return when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                fromUser = true
+                waveformChangeListener?.onStartTrackingTouch(this)
                 curX = event.x
                 scale(1 / scaleFactor)
                 invalidate()
@@ -144,17 +167,24 @@ class WaveformView : View {
             }
 
             MotionEvent.ACTION_UP -> {
+                fromUser = false
                 scale(scaleFactor)
                 invalidate()
+                waveformChangeListener?.onStopTrackingTouch(this)
                 true
             }
 
             MotionEvent.ACTION_MOVE -> {
                 offsetX += event.x - curX
+                updateProgress()
                 curX = event.x
                 return true
             }
             else -> false
         }
+    }
+
+    private fun updateProgress() {
+        progress = abs(offsetX / desiredWidth)
     }
 }

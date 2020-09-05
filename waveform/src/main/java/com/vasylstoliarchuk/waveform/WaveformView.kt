@@ -6,13 +6,14 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import kotlin.math.min
 
 
 class WaveformView : View {
     private val TAG = WaveformView::class.java.simpleName
 
-    private var scaleFactor = 0.9f
+    private var scaleFactor = 0.95f
     var data: FloatArray = FloatArray(0)
         set(value) {
             field = value
@@ -34,9 +35,6 @@ class WaveformView : View {
         style = Paint.Style.FILL
         color = Color.BLACK
     }
-
-    private val scaleMatrix = Matrix()
-    private val scaleRectF = RectF()
 
     private val desiredWidth: Int
         get() = data.size * (barWidth + barSpacing) - barSpacing
@@ -95,9 +93,10 @@ class WaveformView : View {
     }
 
     private fun scale(scaleFactor: Float) {
-        drawingPath.computeBounds(scaleRectF, true)
-        scaleMatrix.setScale(1.0f, scaleFactor, scaleRectF.centerX(), scaleRectF.centerY())
-        drawingPath.transform(scaleMatrix)
+        animate().scaleY(scaleFactor)
+            .setDuration(100)
+            .setInterpolator(AccelerateDecelerateInterpolator())
+            .start()
     }
 
     private var dx = 0f

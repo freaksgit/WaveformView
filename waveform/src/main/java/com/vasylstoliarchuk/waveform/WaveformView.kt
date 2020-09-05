@@ -1,12 +1,13 @@
 package com.vasylstoliarchuk.waveform
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
-import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import kotlin.math.min
 
 
@@ -26,8 +27,13 @@ class WaveformView : View {
     private var offsetX = 0f
         set(value) {
             Log.d(TAG, "setOffsetX($value)")
-            drawingPath.offset(value - field, 0f)
-            field = value
+            val validatedValue = when {
+                value > 0 -> 0f
+                value < -desiredWidth -> -desiredWidth.toFloat()
+                else -> value
+            }
+            drawingPath.offset(validatedValue - field, 0f)
+            field = validatedValue
             invalidate()
         }
 
@@ -35,6 +41,9 @@ class WaveformView : View {
         style = Paint.Style.FILL
         color = Color.BLACK
     }
+
+    private val scaleMatrix = Matrix()
+    private val scaleRectF = RectF()
 
     private val desiredWidth: Int
         get() = data.size * (barWidth + barSpacing) - barSpacing
@@ -93,15 +102,19 @@ class WaveformView : View {
     }
 
     private fun scale(scaleFactor: Float) {
-        animate().scaleY(scaleFactor)
-            .setDuration(100)
-            .setInterpolator(AccelerateDecelerateInterpolator())
-            .start()
+        drawingPath.computeBounds(scaleRectF, true)
+        val startMatrix = Matrix(scaleMatrix)
+        scaleMatrix.setScale(1.0f, scaleFactor, scaleRectF.centerX(), scaleRectF.centerY())
+        startAnimation(MatrixAnimation(startMatrix, scaleMatrix).apply {
+            duration = 100
+            interpolator = DecelerateInterpolator()
+        })
     }
 
     private var dx = 0f
     private var x1 = 0f
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         return when (event.action) {
             MotionEvent.ACTION_DOWN -> {
@@ -121,14 +134,7 @@ class WaveformView : View {
                 dx = event.x - x1
                 Log.d(TAG, "event.x=${event.x}, x1=$x1, dx=$dx")
                 x1 = event.x
-
-                val offsetByX = offsetX + dx
-                offsetX = when {
-                    offsetByX > 0 -> 0f
-                    offsetByX < -desiredWidth -> -desiredWidth.toFloat()
-                    else -> offsetByX
-
-                }
+                offsetX += dx
                 return true
             }
             else -> false

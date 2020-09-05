@@ -1,14 +1,23 @@
 package com.vasylstoliarchuk.waveform
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Path
+import android.graphics.*
 import android.util.AttributeSet
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.view.View
 
+
 class WaveformView : View {
+    private var scaleFactor = 0.9f
+    private val myListener = object : GestureDetector.SimpleOnGestureListener() {
+        override fun onDown(e: MotionEvent): Boolean {
+            scale(1 / scaleFactor)
+            invalidate()
+            return true
+        }
+    }
+    private val detector: GestureDetector = GestureDetector(context, myListener)
 
     var data: FloatArray = FloatArray(0)
         set(value) {
@@ -24,6 +33,9 @@ class WaveformView : View {
         style = Paint.Style.FILL
         color = Color.BLACK
     }
+
+    private val scaleMatrix = Matrix()
+    private val scaleRectF = RectF()
 
     constructor(context: Context) : super(context)
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
@@ -46,9 +58,28 @@ class WaveformView : View {
 
             drawingPath.addRect(barLeft, barTop, barRight, barBottom, Path.Direction.CW)
         }
+        scale(scaleFactor)
     }
 
     override fun onDraw(canvas: Canvas) {
         canvas.drawPath(drawingPath, paint)
+    }
+
+    private fun scale(scaleFactor: Float) {
+        drawingPath.computeBounds(scaleRectF, true)
+        scaleMatrix.setScale(scaleFactor, scaleFactor, scaleRectF.centerX(), scaleRectF.centerY())
+        drawingPath.transform(scaleMatrix)
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        return detector.onTouchEvent(event).let { result ->
+            if (!result) {
+                if (event.action == MotionEvent.ACTION_UP) {
+                    scale(scaleFactor)
+                    invalidate()
+                    true
+                } else false
+            } else true
+        }
     }
 }

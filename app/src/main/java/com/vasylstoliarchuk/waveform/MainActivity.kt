@@ -16,7 +16,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val values = (0..200).map { Random.nextFloat() }
-        val max = values.maxByOrNull { it } ?: 10000f
+        val max = values.maxOf { it }
         waveform.data = values.map { it / max }.toTypedArray()
         var aProgress = 0f
 
